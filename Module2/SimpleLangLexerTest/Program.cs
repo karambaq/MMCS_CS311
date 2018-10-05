@@ -12,8 +12,24 @@ namespace SimpleLangLexerTest
         public static void Main()
         {
             string fileContents = @"begin 
-id23 := 24;  
-cycle ; 2 id258 id29 ; 
+id23 := 24;
+cycle ; 2 id258 id29 ;
+asd123;
+id23 := 10; -7 :1
+cycle; 12
+id12345 id12;
+- -=
+and not or
+div mod
++= -= *= /=
+> < >= <= = <>
+id23 := 10; -7 :1
+//> < >= <= = <>
+{+= -= *= /=123}
++-/+=
+<<=
+>>=
+--=
 end";
             TextReader inputReader = new StringReader(fileContents);
             Lexer l = new Lexer(inputReader);

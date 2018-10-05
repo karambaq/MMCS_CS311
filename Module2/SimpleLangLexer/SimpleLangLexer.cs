@@ -25,7 +25,38 @@ namespace SimpleLangLexer
         ASSIGN,
         BEGIN,
         END,
-        CYCLE
+        CYCLE,
+        COMMA,
+        PLUS,
+        MINUS,
+        MULT,
+        DIVISION,
+        MOD,
+        DIV,
+        AND,
+        OR,
+        NOT,
+        MULTASSIGN,
+        DIVASSIGN,
+        PLUSASSIGN,
+        MINUSASSIGN,
+        LT,  //lesser
+        GT,  //greater
+        LEQ, //less or equal
+        GEQ, //greater or equal
+        EQ,  //equal
+        NEQ, //not equal
+        WHILE,
+        DO,
+        FOR,
+        TO,
+        IF,
+        THEN,
+        ELSE,
+        LEFT_BRACKET,
+        RIGHT_BRACKET,
+        COMMENT,
+        LONGCOMMENT
     }
 
     public class Lexer
@@ -41,7 +72,7 @@ namespace SimpleLangLexer
         public int LexValue;                        // Целое значение, связанное с лексемой LexNum
 
         private string CurrentLineText;  // Накапливает символы текущей строки для сообщений об ошибках
-        
+
 
         public Lexer(TextReader input)
         {
@@ -54,7 +85,8 @@ namespace SimpleLangLexer
             NextLexem();    // Считать первую лексему, заполнив LexText, LexKind и, возможно, LexValue
         }
 
-        public void Init() {
+        public void Init()
+        {
 
         }
 
@@ -71,6 +103,11 @@ namespace SimpleLangLexer
             keywordsMap["begin"] = Tok.BEGIN;
             keywordsMap["end"] = Tok.END;
             keywordsMap["cycle"] = Tok.CYCLE;
+            keywordsMap["div"] = Tok.DIV;
+            keywordsMap["mod"] = Tok.MOD;
+            keywordsMap["and"] = Tok.AND;
+            keywordsMap["or"] = Tok.OR;
+            keywordsMap["not"] = Tok.NOT;
         }
 
         public string FinishCurrentLine()
@@ -134,16 +171,126 @@ namespace SimpleLangLexer
                 NextCh();
                 LexKind = Tok.SEMICOLON;
             }
+            else if (currentCh == ',')
+            {
+                NextCh();
+                LexKind = Tok.COMMA;
+            }
+            else if (currentCh == '+')
+            {
+                NextCh();
+                if (currentCh == '=')
+                {
+                    NextCh();
+                    LexKind = Tok.PLUSASSIGN;
+                }
+                else LexKind = Tok.PLUS;
+            }
+            else if (currentCh == '-')
+            {
+                NextCh();
+                if (currentCh == '=')
+                {
+                    NextCh();
+                    LexKind = Tok.MINUSASSIGN;
+                }
+                else LexKind = Tok.MINUS;
+            }
+            else if (currentCh == '*')
+            {
+                NextCh();
+                if (currentCh == '=')
+                {
+                    NextCh();
+                    LexKind = Tok.MULTASSIGN;
+                }
+                else LexKind = Tok.MULT;
+            }
+            else if (currentCh == '/')
+            {
+                NextCh();
+                if (currentCh == '=')
+                {
+                    NextCh();
+                    LexKind = Tok.DIVASSIGN;
+                }
+                else if (currentCh == '/')
+                {
+                    NextCh();
+                    while (currentCh != '\n')
+                        NextCh();
+                    LexKind = Tok.COMMENT;
+                }
+                else LexKind = Tok.DIV;
+            }
             else if (currentCh == ':')
             {
                 NextCh();
                 if (currentCh != '=')
                 {
-                    LexError("= was expected");
+                    if (LexText == ":")
+                        LexKind = Tok.COLON;
+
+                    else
+                    {
+                        NextCh();
+                        LexKind = Tok.COLON;
+                    }
                 }
-                NextCh();
-                LexKind = Tok.ASSIGN;
+                else
+                {
+                    NextCh();
+                    LexKind = Tok.ASSIGN;
+                }
             }
+            else if (currentCh == '>')
+            {
+                NextCh();
+                if (currentCh == '=')
+                {
+                    NextCh();
+                    LexKind = Tok.GEQ;
+                }
+                else LexKind = Tok.GT;
+            }
+            else if (currentCh == '<')
+            {
+                NextCh();
+                if (currentCh == '=')
+                {
+                    NextCh();
+                    LexKind = Tok.LEQ;
+                }
+                else if (currentCh == '>')
+                {
+                    NextCh();
+                    LexKind = Tok.NEQ;
+                }
+                else LexKind = Tok.LT;
+            }
+            else if (currentCh == '=')
+            {
+                NextCh();
+                LexKind = Tok.EQ;
+            }
+            else if (currentCh == '{')
+            {
+                NextCh();
+                if (currentCh == '}')
+                    LexKind = Tok.LONGCOMMENT;
+                else
+                {
+                    while (currentCh != '}' & (int)currentCh != 0)
+                        NextCh();
+                    if (currentCh == '}')
+                    {
+                        NextCh();
+                        LexKind = Tok.LONGCOMMENT;
+                    }
+                    else LexError("} was expected");
+                }
+            }
+
             else if (char.IsLetter(currentCh))
             {
                 while (char.IsLetterOrDigit(currentCh))
@@ -192,9 +339,11 @@ namespace SimpleLangLexer
             var result = t.ToString();
             switch (t)
             {
-                case Tok.ID: result += ' ' + LexText;
+                case Tok.ID:
+                    result += ' ' + LexText;
                     break;
-                case Tok.INUM: result += ' ' + LexValue.ToString();
+                case Tok.INUM:
+                    result += ' ' + LexValue.ToString();
                     break;
             }
             return result;
